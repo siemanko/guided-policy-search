@@ -1,29 +1,21 @@
 # Double pendulum formula translated from the C code at
 # http://www.physics.usyd.edu.au/~wheat/dpend_html/solve_dpend.c
 
-from numpy import sin, cos, pi, array
-import numpy as np
-import matplotlib.pyplot as plt
-import scipy.integrate as integrate
 import matplotlib.animation as animation
+import matplotlib.pyplot as plt
+import numpy as np
+import scipy.integrate as integrate
 
+from numpy import sin, cos, pi, array
+
+from controller import LQR
 
 class DoublePendulum(object):
-    @staticmethod
-    def example_pendulum():
-        params = {
-            'g_ms2': 9.8, # acceleration due to gravity, in m/s^2
-            'l1_m': 1.0, # length of pendulum 1 in m
-            'l2_m': 1.0, # length of pendulum 2 in m
-            'm1_kg': 1.0, # mass of pendulum 1 in kg
-            'm2_kg': 1.0, # mass of pendulum 2 in kg
-        }
-        return DoublePendulum(params)
-
     def __init__(self, params):
         self.P = params
+        self.controller = None
 
-    def derivs(self, state, t):
+    def f(self, state, t):
         G = self.P['g_ms2']
         L1 = self.P['l1_m']
         L2 = self.P['l2_m']
@@ -46,10 +38,39 @@ class DoublePendulum(object):
                    - (M1+M2)*L1*state[1]*state[1]*sin(del_)
                    - (M1+M2)*G*sin(state[2]))/den2
 
-        return dydx
+        return array(dydx)
 
+    def df(self, state, t, h=0.0001):
+        res = []
+        for i in range(4):
+            state_c = state.copy()
+            state_c[i] = state[i] + h/2.0;
+            df_p = self.f(state_c, t)
+            state_c[i] = state[i] - h/2.0;
+            df_m = self.f(state_c, t)
+            finite_difference = (df_p - df_m)/h
+            res.append(finite_difference[:, np.newaxis])
+        return np.hstack(res)
 
-    def simulate(self, intial_state, time_range, visualize=False):
+    def control_matrix(self, state, t):
+        return np.array([[0],[0],[0],[1]])
+
+    def controler_update(self, state, t):
+        u = self.controller(state, t)
+        ctrl_lb, ctrl_ub = self.P['control_limit']
+        u = np.minimum(ctrl_ub, u)
+        u = np.maximum(ctrl_lb, u)
+
+        return np.dot(self.control_matrix(state, t),  u)
+
+    def simulation_derivs(self, state, t):
+        derivs = self.f(state, t)
+        if self.controller:
+            ctrl = self.controler_update(state, t)
+            derivs = derivs + ctrl
+        return derivs
+
+    def simulate(self, initial_state, time_range, visualize=False):
         # th1 and th2 are the initial angles (degrees)
         # w10 and w20 are the initial angular velocities (degrees per second)
 
@@ -59,15 +80,14 @@ class DoublePendulum(object):
         if visualize:
             self.visualize(res, time_range)
 
-    def simulation_derivs(self, state, t):
-        derivs = self.derivs(state, t)
-        if self.controller:
-            ctrl = self.controller(state, t)
-            derivs = [ derivs[i] + ctrl[i] for i in range(4)]
-        return derivs
 
     def set_controller(self, controller):
         self.controller = controller
+
+
+#    def energy(self, state, t):
+
+
 
     def visualize(self, y, time_range):
         x1 = self.P['l1_m']*sin(y[:,0])
@@ -108,14 +128,3 @@ class DoublePendulum(object):
 
         #ani.save('double_pendulum.mp4', fps=15)
         plt.show()
-
-
-if __name__ == '__main__':
-    p = DoublePendulum.example_pendulum()
-
-    initial_state = [0.1, 0.0, 0.0, 0.0]
-    time_range = np.arange(0.0, 20, 0.01)
-
-    p.set_controller(lambda state, t: [0.0, 3.0, 0.0, 0.0])
-
-    y = p.simulate(initial_state, time_range, visualize=True)
