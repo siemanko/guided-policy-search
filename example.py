@@ -29,7 +29,7 @@ def DP_lqr():
     time_range = np.arange(0.0, 20, 0.01)
 
     # LQR controller focused on upside
-    lqr = LQR().train(p, upside_state, 0)
+    lqr = LQR(p, upside_state, 0)
     p.set_controller(lqr.get())
 
     # simulation and visualization
@@ -50,7 +50,7 @@ def swingup_example():
     time_range = np.arange(0.0, 20, 0.01)
 
     # LQR controller focused on upside
-    lqr = LQR().train(p, upside_state, 0)
+    lqr = LQR(p, upside_state, 0)
 
     # Energy controller
     energy_ctrl = EnergyStabilization(upside_state, 0.01)

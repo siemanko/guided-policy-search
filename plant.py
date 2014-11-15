@@ -85,9 +85,13 @@ class DoublePendulum(object):
         self.controller = controller
 
 
-#    def energy(self, state, t):
-
-
+    def energy(self, state, t):
+        t1, w1, t2, w2 = state
+        y1 = -cos(t1)*self.P['l1_m']
+        y2 = -cos(t2)*self.P['l2_m'] + y1
+        potential = self.P['m1_kg'] * self.P['g_ms2'] * y1 + self.P['m2_kg'] * self.P['g_ms2'] * y2
+        kinetic = 0.5 * self.P['m1_kg'] * self.P['l1_m']**2 * w1**2 + 0.5 * self.P['m2_kg'] * self.P['l2_m']**2 * w2**2
+        return potential + kinetic
 
     def visualize(self, y, time_range):
         x1 = self.P['l1_m']*sin(y[:,0])
