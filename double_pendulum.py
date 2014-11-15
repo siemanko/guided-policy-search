@@ -54,10 +54,20 @@ class DoublePendulum(object):
         # w10 and w20 are the initial angular velocities (degrees per second)
 
         # integrate your ODE using scipy.integrate.
-        res = integrate.odeint(self.derivs, initial_state, time_range)
+        res = integrate.odeint(self.simulation_derivs, initial_state, time_range)
 
         if visualize:
             self.visualize(res, time_range)
+
+    def simulation_derivs(self, state, t):
+        derivs = self.derivs(state, t)
+        if self.controller:
+            ctrl = self.controller(state, t)
+            derivs = [ derivs[i] + ctrl[i] for i in range(4)]
+        return derivs
+
+    def set_controller(self, controller):
+        self.controller = controller
 
     def visualize(self, y, time_range):
         x1 = self.P['l1_m']*sin(y[:,0])
@@ -103,7 +113,9 @@ class DoublePendulum(object):
 if __name__ == '__main__':
     p = DoublePendulum.example_pendulum()
 
-    initial_state = [pi, 0.0, 0, 0.0]
+    initial_state = [0.1, 0.0, 0.0, 0.0]
     time_range = np.arange(0.0, 20, 0.01)
+
+    p.set_controller(lambda state, t: [0.0, 3.0, 0.0, 0.0])
 
     y = p.simulate(initial_state, time_range, visualize=True)
