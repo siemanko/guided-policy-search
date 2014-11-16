@@ -55,7 +55,7 @@ def swingup_example(aggressive=True, debug=False):
     energy_ctrl = EnergyStabilization(p, upside_state, 0)
 
     k = [0.1, 0.025, 0.025]
-    max_lqr_score = 20.0
+    max_lqr_score = 19.0
 
     # Erection controller
     normalize_angle = lambda angle : angle % (2*pi) - pi
@@ -108,15 +108,15 @@ def swingup_example(aggressive=True, debug=False):
             lqr_required_score.append(max_lqr_score)
             angle_vel.append(abs(yi[3]-yi[1]))
         plt.figure()
-        #plt.plot(time_range, desired_energy, color='blue')
-        #plt.plot(time_range, total_energy, color='red')
-        plt.plot(time_range, angle_vel)
+        plt.plot(time_range, desired_energy, color='blue')
+        plt.plot(time_range, total_energy, color='red')
 
 
         plt.figure()
         plt.plot(time_range, lqr_score, color='black')
         plt.plot(time_range, lqr_required_score, color='red')
         plt.figure()
+        plt.plot(time_range, angle_vel, color="red")
         plt.plot(time_range, angle_diff, color='green')
 
 
@@ -125,4 +125,4 @@ def swingup_example(aggressive=True, debug=False):
 
 if __name__ == '__main__':
     #DP_lqr()
-    swingup_example(debug=True)
+    swingup_example(debug=False)

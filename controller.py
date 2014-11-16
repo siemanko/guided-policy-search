@@ -24,8 +24,6 @@ class LQR(Controller):
     def score(self, state, t):
         xbar = (state - self.state0)[:, np.newaxis]
         score =  np.dot(np.dot(xbar.T, self.S), xbar)
-        #if not abs(state[0] - np.pi) < np.pi/10:
-        #    score += 50.0
         return score
 
     def get(self):
@@ -37,8 +35,7 @@ class LQR(Controller):
 class EnergyStabilization(Controller):
     def __init__(self, plant, state0, t0, coefficient=1.0):
         self.e_desired = plant.energy(state0, t0)
-        self.e_desired = self.e_desired * 1
-        print self.e_desired
+        self.e_desired = self.e_desired 
         self.plant = plant
         self.coefficient = coefficient
 
