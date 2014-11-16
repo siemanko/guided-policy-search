@@ -13,7 +13,7 @@ class LQR(Controller):
         A = plant.df(state0, t0)
         B = plant.control_matrix(state0, t0)
         Q = Q or np.identity(A.shape[1])
-        R = R or np.identity(B.shape[1]) * 0.01
+        R = R or np.identity(B.shape[1]) * 0.000001
 
         K, S, E = control.lqr(A, B, Q, R)
         self.state0 = state0.copy()

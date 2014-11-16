@@ -40,7 +40,7 @@ class DoublePendulum(object):
 
         return array(dydx)
 
-    def df(self, state, t, h=0.0001):
+    def df(self, state, t, h=0.0000001):
         res = []
         for i in range(4):
             state_c = state.copy()
