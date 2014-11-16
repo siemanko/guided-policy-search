@@ -53,9 +53,13 @@ class DoublePendulum(object):
         return np.hstack(res)
 
     def control_matrix(self, state, t):
-        return np.array([[0],[0],[0],[1]])
+        return np.array([[0],[0],[0],[1]]) 
 
     def controler_update(self, state, t):
+        # normalize state
+        state[0] %= 2*pi
+        state[2] %= 2*pi
+
         u = self.controller(state, t)
         ctrl_lb, ctrl_ub = self.P['control_limit']
         u = np.minimum(ctrl_ub, u)
@@ -76,6 +80,9 @@ class DoublePendulum(object):
 
         # integrate your ODE using scipy.integrate.
         res = integrate.odeint(self.simulation_derivs, initial_state, time_range)
+
+        res[:, 0] %= 2*pi
+        res[:, 2] %= 2*pi
 
         if visualize:
             self.visualize(res, time_range)

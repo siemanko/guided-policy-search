@@ -13,7 +13,7 @@ class LQR(Controller):
         A = plant.df(state0, t0)
         B = plant.control_matrix(state0, t0)
         Q = Q or np.identity(A.shape[1])
-        R = R or np.identity(B.shape[1]) * 0.000001
+        R = R or np.identity(B.shape[1]) * 0.00000001
 
         K, S, E = control.lqr(A, B, Q, R)
         self.state0 = state0.copy()
@@ -24,6 +24,8 @@ class LQR(Controller):
     def score(self, state, t):
         xbar = (state - self.state0)[:, np.newaxis]
         score =  np.dot(np.dot(xbar.T, self.S), xbar)
+        #if not abs(state[0] - np.pi) < np.pi/10:
+        #    score += 50.0
         return score
 
     def get(self):
@@ -35,12 +37,15 @@ class LQR(Controller):
 class EnergyStabilization(Controller):
     def __init__(self, plant, state0, t0, coefficient=1.0):
         self.e_desired = plant.energy(state0, t0)
+        self.e_desired = self.e_desired * 1
+        print self.e_desired
         self.plant = plant
         self.coefficient = coefficient
 
     def get(self):
         controller = lambda state, t: self.coefficient* (self.e_desired - self.plant.energy(state, t)) * state[3]
         return controller
+
 
 class MixedController(Controller):
     def __init__(self):
@@ -52,11 +57,10 @@ class MixedController(Controller):
 
     def get(self):
         def controller(state, t):
-            res = 0
+            res = np.array([0.0])
 
             for in_region, controller in self.regional:
                 if in_region(state, t):
-                    print 'ACTIVE at t=%.2f' % (t,)
                     return controller(state, t)
 
             for w, controller in self.c:
