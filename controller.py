@@ -2,7 +2,11 @@ import control
 import numpy as np
 
 class Controller(object):
-    pass
+    def __init__(self, controller):
+        self.controller = controller
+
+    def get(self):
+        return self.controller
 
 class LQR(Controller):
     def __init__(self, plant, state0, t0, Q=None, R=None):
@@ -17,11 +21,61 @@ class LQR(Controller):
         self.S = S
         self.E = E
 
+    def score(self, state, t):
+        xbar = (state - self.state0)[:, np.newaxis]
+        score =  np.dot(np.dot(xbar.T, self.S), xbar)
+        return score
+
     def get(self):
         controller =  lambda state, t: np.dot(- self.K, (state - self.state0))
         return controller
 
+# WARNING: this controller works only for double pendulum.
+# not sure how to generalize
 class EnergyStabilization(Controller):
-    pass
-#    def __init__
+    def __init__(self, plant, state0, t0, coefficient=1.0):
+        self.e_desired = plant.energy(state0, t0)
+        self.plant = plant
+        self.coefficient = coefficient
 
+    def get(self):
+        controller = lambda state, t: self.coefficient* (self.e_desired - self.plant.energy(state, t)) * state[3]
+        return controller
+
+class MixedController(Controller):
+    def __init__(self):
+        self.c = []
+        self.regional = []
+
+    def add(self, weight, controller):
+        self.c.append((weight, controller.get()))
+
+    def get(self):
+        def controller(state, t):
+            res = 0
+
+            for in_region, controller in self.regional:
+                if in_region(state, t):
+                    print 'ACTIVE at t=%.2f' % (t,)
+                    return controller(state, t)
+
+            for w, controller in self.c:
+                output = controller(state, t)
+                if res is None:
+                    res = w*output
+                else:
+                    res += w*output
+            return res
+
+        return controller
+
+    def add_regional(self, in_region, controller):
+        """WARNING: controllers are tested in order they are added.
+                    are your regions disjoint?
+        """
+        self.regional.append((in_region, controller.get()))
+
+    def add_lqr(self, lqr, maximum_score):
+        """Activates lqr when it's score is less than maximum_score"""
+        self.add_regional(lambda state, t: lqr.score(state, t) < maximum_score,
+                          lqr)

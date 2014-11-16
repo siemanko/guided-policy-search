@@ -60,8 +60,8 @@ class DoublePendulum(object):
         ctrl_lb, ctrl_ub = self.P['control_limit']
         u = np.minimum(ctrl_ub, u)
         u = np.maximum(ctrl_lb, u)
-
-        return np.dot(self.control_matrix(state, t),  u)
+        state_change = np.dot(self.control_matrix(state, t),  u)
+        return state_change
 
     def simulation_derivs(self, state, t):
         derivs = self.f(state, t)
@@ -79,6 +79,8 @@ class DoublePendulum(object):
 
         if visualize:
             self.visualize(res, time_range)
+
+        return res
 
 
     def set_controller(self, controller):
