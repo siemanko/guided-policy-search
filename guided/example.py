@@ -119,9 +119,7 @@ def swingup_example(aggressive=True, debug=False):
         plt.plot(time_range, angle_vel, color="red")
         plt.plot(time_range, angle_diff, color='green')
 
-
-    #plt.show()
-    p.visualize(y, time_range)
+    return p.animation(y, time_range)
 
 if __name__ == '__main__':
     #DP_lqr()

@@ -14,13 +14,20 @@ class DoublePendulum(object):
     def __init__(self, params):
         self.P = params
         self.controller = None
+        self._cached_constants = None
+
+    def extract_constants(self):
+        if not self._cached_constants:
+            G = self.P['g_ms2']
+            L1 = self.P['l1_m']
+            L2 = self.P['l2_m']
+            M1 = self.P['m1_kg']
+            M2 = self.P['m2_kg']
+            self._cached_constants = (G, L1, L2, M1, M2)
+        return self._cached_constants
 
     def f(self, state, t):
-        G = self.P['g_ms2']
-        L1 = self.P['l1_m']
-        L2 = self.P['l2_m']
-        M1 = self.P['m1_kg']
-        M2 = self.P['m2_kg']
+        G, L1, L2, M1, M2 = self.extract_constants()
         dydx = np.zeros_like(state)
         dydx[0] = state[1]
 
@@ -53,14 +60,16 @@ class DoublePendulum(object):
         return np.hstack(res)
 
     def control_matrix(self, state, t):
-        return np.array([[0],[0],[0],[1]]) 
+        return np.array([[0],[0],[0],[1]])
 
     def controler_update(self, state, t):
         # normalize state
         state[0] %= 2*pi
         state[2] %= 2*pi
 
-        u = self.controller(state, t)
+        u = np.array(self.controller(state, t))
+        if len(u.shape) == 0:
+            u = np.array([u])
         ctrl_lb, ctrl_ub = self.P['control_limit']
         u = np.minimum(ctrl_ub, u)
         u = np.maximum(ctrl_lb, u)
@@ -80,7 +89,16 @@ class DoublePendulum(object):
 
         # integrate your ODE using scipy.integrate.
         res = integrate.odeint(self.simulation_derivs, initial_state, time_range)
+        """initial_state = np.array(initial_state)
+        res = [initial_state]
+        state = initial_state
+        for t_prev, t in zip(time_range[:-1], time_range[1:]):
+            deriv = np.array(self.simulation_derivs(state, t_prev))
+            state = state + (t-t_prev) * deriv
+            res.append(state)
 
+        res = np.vstack(res)
+"""
         res[:, 0] %= 2*pi
         res[:, 2] %= 2*pi
 
@@ -102,7 +120,7 @@ class DoublePendulum(object):
         kinetic = 0.5 * self.P['m1_kg'] * self.P['l1_m']**2 * w1**2 + 0.5 * self.P['m2_kg'] * self.P['l2_m']**2 * w2**2
         return potential + kinetic
 
-    def visualize(self, y, time_range):
+    def animation(self, y, time_range):
         x1 = self.P['l1_m']*sin(y[:,0])
         y1 = -self.P['l1_m']*cos(y[:,0])
 
@@ -122,22 +140,28 @@ class DoublePendulum(object):
         time_template = 'time = %.1fs'
         time_text = ax.text(0.05, 0.9, '', transform=ax.transAxes)
 
+        N_FRAMES = 100
+        total_time = time_range[-1]
+        draw_interval = float(total_time)/N_FRAMES
+        samples_per_timeframe = int(y.shape[0]/N_FRAMES)
         def init():
             line.set_data([], [])
             time_text.set_text('')
             return line, time_text
 
-        def animate(i):
+        def animate(frame):
+            i = frame*samples_per_timeframe
             thisx = [0, x1[i], x2[i]]
             thisy = [0, y1[i], y2[i]]
             dt = time_range[i] - time_range[i-1]
+
             line.set_data(thisx, thisy)
-            time_text.set_text(time_template%(i*dt))
+            time_text.set_text(time_template % time_range[i])
+
             return line, time_text
 
-        average_dt_s = sum([time_range[i]-time_range[i-1] for i in range(1, len(time_range)) ])/float(len(time_range) -1)
-        ani = animation.FuncAnimation(fig, animate, np.arange(1, len(y)),
-            interval=average_dt_s*1000/2, blit=True, init_func=init)
+        ani = animation.FuncAnimation(fig, animate, np.arange(0, N_FRAMES,1),
+            interval=draw_interval, blit=True, init_func=init)
 
         #ani.save('double_pendulum.mp4', fps=15)
-        plt.show()
+        return ani
