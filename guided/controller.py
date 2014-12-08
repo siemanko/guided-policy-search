@@ -12,7 +12,7 @@ class LQR(Controller):
     def __init__(self, plant, state0, t0, Q=None, R=None):
         A = plant.df(state0, t0)
         B = plant.control_matrix(state0, t0)
-        Q = Q or np.identity(A.shape[1])
+        Q = Q or np.identity(A.shape[1]) * 1.0
         R = R or np.identity(B.shape[1]) * 0.00000001
 
         K, S, E = control.lqr(A, B, Q, R)
@@ -35,7 +35,7 @@ class LQR(Controller):
 class EnergyStabilization(Controller):
     def __init__(self, plant, state0, t0, coefficient=1.0):
         self.e_desired = plant.energy(state0, t0)
-        self.e_desired = self.e_desired 
+        self.e_desired = self.e_desired
         self.plant = plant
         self.coefficient = coefficient
 

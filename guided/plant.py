@@ -5,6 +5,7 @@ import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.integrate as integrate
+import theano.tensor as T
 
 from numpy import sin, cos, pi, array
 
@@ -16,6 +17,12 @@ class DoublePendulum(object):
         self.controller = None
         self._cached_constants = None
 
+        # constants
+        self.num_states = 4
+        self.num_controls = 1
+        self.control_bounds = self.P['control_limit']
+        self.dt = self.P['dt']
+
     def extract_constants(self):
         if not self._cached_constants:
             G = self.P['g_ms2']
@@ -25,6 +32,31 @@ class DoublePendulum(object):
             M2 = self.P['m2_kg']
             self._cached_constants = (G, L1, L2, M1, M2)
         return self._cached_constants
+
+    def theano_dynamics(self, x, u):
+        G, L1, L2, M1, M2 = self.extract_constants()
+        # TODO: this is just an approximation
+
+        dydx_0 = x[1]
+
+        del_ = x[2]-x[0]
+
+        den1 = (M1+M2)*L1 - M2*L1*T.cos(del_)*T.cos(del_)
+        dydx_1 = (  M2*L1      *  x[1] * x[1] * T.sin(del_) * T.cos(del_)
+                   + M2*G       *  T.sin(x[2]) * T.cos(del_) +
+                     M2*L2      *  x[3] * x[3] * T.sin(del_)
+                   - (M1+M2)*G  *  T.sin(x[0]))/den1
+
+        dydx_2 = x[3]
+
+        den2 = (L2/L1)*den1
+        dydx_3 = (-M2*L2        *   x[3]*x[3]*T.sin(del_)*T.cos(del_)
+                   + (M1+M2)*G   *   T.sin(x[0])*T.cos(del_)
+                   - (M1+M2)*L1  *   x[1]*x[1]*T.sin(del_)
+                   - (M1+M2)*G   *   T.sin(x[2]))/den2
+
+        dydx = T.stack([dydx_0, dydx_1, dydx_2, dydx_3 + u[0]])
+        return x + dydx * self.dt
 
     def f(self, state, t):
         G, L1, L2, M1, M2 = self.extract_constants()
@@ -83,10 +115,11 @@ class DoublePendulum(object):
             derivs = derivs + ctrl
         return derivs
 
-    def simulate(self, initial_state, time_range, visualize=False):
+    def simulate(self, initial_state, time_horizon, visualize=False):
         # th1 and th2 are the initial angles (degrees)
         # w10 and w20 are the initial angular velocities (degrees per second)
 
+        time_range = np.arange(0, time_horizon + self.dt, self.dt)
         # integrate your ODE using scipy.integrate.
         res = integrate.odeint(self.simulation_derivs, initial_state, time_range)
         """initial_state = np.array(initial_state)
@@ -120,7 +153,9 @@ class DoublePendulum(object):
         kinetic = 0.5 * self.P['m1_kg'] * self.P['l1_m']**2 * w1**2 + 0.5 * self.P['m2_kg'] * self.P['l2_m']**2 * w2**2
         return potential + kinetic
 
-    def animation(self, y, time_range):
+    def animation(self, y):
+        time_range = np.arange(0, y.shape[0]*self.dt, self.dt)
+
         x1 = self.P['l1_m']*sin(y[:,0])
         y1 = -self.P['l1_m']*cos(y[:,0])
 
@@ -161,7 +196,7 @@ class DoublePendulum(object):
             return line, time_text
 
         ani = animation.FuncAnimation(fig, animate, np.arange(0, N_FRAMES,1),
-            interval=draw_interval, blit=True, init_func=init)
+            interval=4.0*draw_interval, blit=True, init_func=init)
 
         #ani.save('double_pendulum.mp4', fps=15)
         return ani
