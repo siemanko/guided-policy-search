@@ -70,7 +70,7 @@ class GmmModel(FeatureModel):
     def _fit(self, X,Y, weights):
         #clustering = KMeans(n_clusters=N_CLUSTERS)
         #clustering = MeanShift()
-        print 'Training GMM'
+        print('Training GMM')
         self.clustering = GMM(n_components=self.n_clusters) #min_covar=1)
         self.clustering.fit(X)
 
@@ -85,7 +85,7 @@ class GmmModel(FeatureModel):
             x_temp, y_temp = partitions[l]
             MAX_SAMPLES = 10000
             actual_samples = min(x_temp.shape[0], MAX_SAMPLES)
-            print 'training for cluster %d (of size %d, but actual samples are %d)' % (l, x_temp.shape[0], actual_samples)
+            print('training for cluster %d (of size %d, but actual samples are %d)' % (l, x_temp.shape[0], actual_samples))
 
             rows_selected = np.random.randint(x_temp.shape[0],size=actual_samples)
             self.regressors[l].fit(x_temp[rows_selected,:], y_temp[rows_selected])
@@ -123,7 +123,7 @@ class GmmModel(FeatureModel):
                     x2_temp.append(x2 + np.random.normal(0,noise_sigma))
                     y2_temp.append(y2 + np.random.normal(0,noise_sigma))
             cur_color = colors[l % len(colors)]
-            print 'For cluster %s we go %d samples' % (cur_color, len(x1_temp),)
+            print('For cluster %s we go %d samples' % (cur_color, len(x1_temp),))
             plt.scatter(x1_temp, y1_temp, c=cur_color)
             plt.scatter(x2_temp, y2_temp, c=cur_color, marker='+')
 

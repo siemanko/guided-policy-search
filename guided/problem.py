@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from numpy import pi
 
-from controller import LQR, EnergyStabilization, Controller, MixedController
-from plant import DoublePendulum
+from .controller import LQR, EnergyStabilization, Controller, MixedController
+from .plant import DoublePendulum
 
 class DoublePendulumProblem(object):
     def __init__(self, params=None):
@@ -13,7 +13,7 @@ class DoublePendulumProblem(object):
             'l2_m': 2.0, # length of pendulum 2 in m
             'm1_kg': 1.0, # mass of pendulum 1 in kg
             'm2_kg': 1.0, # mass of pendulum 2 in kg
-            'dt': 0.1,
+            'dt': 0.01,
             'control_limit': [-40.0, 40.0]
         }
         self.params.update(params or {})

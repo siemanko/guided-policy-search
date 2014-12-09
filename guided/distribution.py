@@ -31,10 +31,10 @@ def IWDemo():
     def sample():
         return multivariate_normal(mean,var)
 
-    print norm(dist.main() - var)
+    print(norm(dist.main() - var))
 
     dist = IW(3)
     for _ in range(10):
         dist.include_samples([sample() for _ in range(10)], mean)
 
-    print norm(dist.mean() - var)
+    print(norm(dist.mean() - var))

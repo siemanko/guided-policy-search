@@ -9,23 +9,31 @@ from collections import OrderedDict
 from guided.tmodel import MLP
 
 class PolicyModel(object):
-    @staticmethod
-    def from_plant(plant, **kwargs):
-        return PolicyModel(plant.num_states,
-                           plant.num_controls,
-                           plant.control_bounds,
-                           plant.theano_dynamics,
+    """
+    Use a Multi Layer Perceptron to discover a
+    policy for a dynamics by gradient descending
+    over a single timestep.
+    
+    """
+    @classmethod
+    def from_plant(cls, plant, **kwargs):
+        return cls(state_size=plant.num_states,
+                           policy_size=plant.num_controls,
+                           policy_bounds=plant.control_bounds,
+                           dynamics=plant.theano_dynamics,
                            **kwargs)
 
-    def __init__(self, state_size,
-                       policy_size,
-                       policy_bounds,
-                       dynamics,
+    def __init__(self, state_size = 2,
+                       policy_size = 1,
+                       policy_bounds = (-40,40),
+                       dynamics = None,
                        internal_layers = [],
                        learning_rate = 0.01,
                        dropout = 0.0,
                        allow_input_downcast=True):
         # constatants
+        if dynamics is None:
+          raise ValueError("Dynamics must be specified")
         self.dynamics = dynamics
         self.state_size = state_size
         self.policy_size = policy_size
@@ -53,12 +61,14 @@ class PolicyModel(object):
 
     def create_variables(self):
         self.params = []
+
+        self._mlp = MLP([self.state_size] + self.internal_layers + [self.policy_size],
+                    dropout=self.dropout)
         mlp_params, mlp_x, mlp_prediction, mlp_prediction_dropout = \
-                MLP([self.state_size] + self.internal_layers + [self.policy_size],
-                    dropout=self.dropout).get()
+                self._mlp.get()
         for linear, bias in mlp_params:
             self.params.extend((linear, bias))
-        self._params = mlp_params
+        
         self._prediction = self.boundsify(mlp_prediction)
         self._prediction_dropout = self.boundsify(mlp_prediction_dropout)
         self._x = mlp_x

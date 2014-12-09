@@ -9,7 +9,7 @@ import theano.tensor as T
 
 from numpy import sin, cos, pi, array
 
-from controller import LQR
+from .controller import LQR
 
 class DoublePendulum(object):
     def __init__(self, params):

@@ -24,7 +24,7 @@ def DP_lqr():
     # upside_state with noise in position
     perturbation = np.array([1.0, 0.0, 1.0, 0.0]) * np.random.normal(0.0, 0.1, (4,))
     initial_state = upside_state + perturbation
-    print 'Starting perturbed by %s' % (perturbation,)
+    print('Starting perturbed by %s' % (perturbation,))
     # 20 seconds
     time_range = np.arange(0.0, 10.0, 0.01)
 
@@ -46,7 +46,7 @@ def swingup_example(aggressive=True, debug=False):
     # upside_state with noise in position
 
     initial_state = downside_state + np.array([1.0, 0.0, 1.0, 0.0]) * np.random.normal(0.0, 0.1)
-    print 'Starting from %s' % (initial_state,)
+    print('Starting from %s' % (initial_state,))
 
     # 20 seconds
     time_range = np.arange(0.0, 10, 0.05)
