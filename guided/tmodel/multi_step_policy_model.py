@@ -16,10 +16,11 @@ class MultiStepPolicyModel(PolicyModel):
         and the known system dynamics.
 
         """
-        new_policy = self.boundsify(self._mlp.predict_dropout_with_mask(position, [mask[i] for mask in masks]))
-        new_position = self.dynamics(position, new_policy )[0]
+        policy = self._mlp.predict_dropout_with_mask(position, [mask[i] for mask in masks])
+        u = self.boundsify(policy)
+        new_position = self.dynamics(position, u )[0]
 
-        return [new_position]
+        return [new_position, policy]
 
     def create_misc_functions(self, name, prediction):
         self.predict[name] = theano.function([self._x],
@@ -58,7 +59,7 @@ class MultiStepPolicyModel(PolicyModel):
                                                    allow_input_downcast=self.allow_input_downcast)
 
         # optimize for all timesteps:
-        self.cost[name] = T.sum((result - self.target_value[name])**2)
+        self.cost[name] = T.sum((result[0] - self.target_value[name])**2) + T.sum(result[1] ** 2) * self.policy_laziness
         self.cost_fun[name] = theano.function([self._x, self.target_value[name], self.num_steps],
                                               self.cost[name],
                                               allow_input_downcast=self.allow_input_downcast)

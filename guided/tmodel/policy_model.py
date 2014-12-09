@@ -27,6 +27,7 @@ class PolicyModel(object):
                        policy_size = 1,
                        policy_bounds = (-40,40),
                        dynamics = None,
+                       policy_laziness = 0.0000001,
                        internal_layers = [],
                        learning_rate = 0.01,
                        dropout = 0.0,
@@ -42,6 +43,8 @@ class PolicyModel(object):
         self.allow_input_downcast = allow_input_downcast
         self.learning_rate = theano.shared(np.float64(learning_rate).astype(floatX), name='learning_rate')
         self.dropout = dropout
+
+        self.policy_laziness = theano.shared(np.float64(policy_laziness).astype(floatX), name='policy_laziness')
 
         self.predict = {}
         self.teleportation = {}
