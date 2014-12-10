@@ -37,25 +37,28 @@ class DoublePendulum(object):
         G, L1, L2, M1, M2 = self.extract_constants()
         # TODO: this is just an approximation
 
-        dydx_0 = x[1]
+        dydx = T.alloc(0.0, 4)
+
+        dydx = T.set_subtensor(dydx[0], x[1])
 
         del_ = x[2]-x[0]
 
         den1 = (M1+M2)*L1 - M2*L1*T.cos(del_)*T.cos(del_)
-        dydx_1 = (  M2*L1      *  x[1] * x[1] * T.sin(del_) * T.cos(del_)
-                   + M2*G       *  T.sin(x[2]) * T.cos(del_) +
-                     M2*L2      *  x[3] * x[3] * T.sin(del_)
-                   - (M1+M2)*G  *  T.sin(x[0]))/den1
 
-        dydx_2 = x[3]
+        dydx = T.set_subtensor(dydx[1],
+            (  M2*L1      *  x[1] * x[1] * T.sin(del_) * T.cos(del_)
+               + M2*G       *  T.sin(x[2]) * T.cos(del_) +
+                 M2*L2      *  x[3] * x[3] * T.sin(del_)
+               - (M1+M2)*G  *  T.sin(x[0]))/den1 )
+
+
+        dydx = T.set_subtensor(dydx[2], x[3])
 
         den2 = (L2/L1)*den1
-        dydx_3 = (-M2*L2        *   x[3]*x[3]*T.sin(del_)*T.cos(del_)
+        dydx = T.set_subtensor(dydx[3], (-M2*L2        *   x[3]*x[3]*T.sin(del_)*T.cos(del_)
                    + (M1+M2)*G   *   T.sin(x[0])*T.cos(del_)
                    - (M1+M2)*L1  *   x[1]*x[1]*T.sin(del_)
-                   - (M1+M2)*G   *   T.sin(x[2]))/den2
-
-        dydx = T.stack([dydx_0, dydx_1, dydx_2, dydx_3 + u[0]])
+                   - (M1+M2)*G   *   T.sin(x[2]))/den2  + u )
         return x + dydx * self.dt
 
     def f(self, state, t):

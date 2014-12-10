@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import theano
 import theano.tensor as T
 
@@ -58,23 +57,29 @@ class PolicyModel(object):
         self.create_update_fun()
 
     def boundsify(self, net_output):
-        zero_one = (net_output + 1.0) / 2.0
+        zero_one = (net_output[0] + 1.0) / 2.0
         u_min, u_max = self.policy_bounds
         return u_min + zero_one * (u_max-u_min)
 
-    def create_variables(self):
-        self.params = []
+    def acquire_MLP(self):
+        """
+        Our MLP uses a tanh to decide on the control input of the system.
 
-        self._mlp = MLP([self.state_size] + self.internal_layers + [self.policy_size],
+        """
+        self._mlp = MLP(layers = [self.state_size] + self.internal_layers + [self.policy_size],
                     dropout=self.dropout)
         mlp_params, mlp_x, mlp_prediction, mlp_prediction_dropout = \
                 self._mlp.get()
-        for linear, bias in mlp_params:
-            self.params.extend((linear, bias))
+        for param_set in mlp_params:
+            self.params.extend(param_set)
         
         self._prediction = self.boundsify(mlp_prediction)
         self._prediction_dropout = self.boundsify(mlp_prediction_dropout)
         self._x = mlp_x
+
+    def create_variables(self):
+        self.params = []
+        self.acquire_MLP()
 
     def create_misc_functions(self, name, prediction):
         self.predict[name] = theano.function([self._x],
@@ -82,7 +87,7 @@ class PolicyModel(object):
                                              allow_input_downcast=self.allow_input_downcast)
 
         self.target_value[name] = T.vector()
-        new_x = self.dynamics(   self._x, prediction )
+        new_x = self.dynamics( self._x, prediction )
         self.teleportation[name] = theano.function([self._x],
                                                    new_x,
                                                    allow_input_downcast=self.allow_input_downcast)
@@ -120,6 +125,6 @@ class PolicyModel(object):
         def c(x,t):
             if any(np.isnan(x)) or not all(np.abs(x) < 1e100):
                 return 0.0
-            prediction = self.predict['test'](np.array(x))[0]
+            prediction = self.predict['test'](np.array(x))
             return prediction
         return c

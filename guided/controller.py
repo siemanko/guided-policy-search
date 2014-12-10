@@ -40,7 +40,7 @@ class EnergyStabilization(Controller):
         self.coefficient = coefficient
 
     def get(self):
-        controller = lambda state, t: self.coefficient* (self.e_desired - self.plant.energy(state, t)) * state[3]
+        controller = lambda state, t: self.coefficient * (self.e_desired - self.plant.energy(state, t)) * state[3]
         return controller
 
 
